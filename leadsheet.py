@@ -1,4 +1,5 @@
 from fpdf import FPDF
+from model import Passage, Repeat
 
 class LeadSheet(FPDF):
 
@@ -24,8 +25,10 @@ class LeadSheet(FPDF):
         # Size and dimensions
         self.set_margins(margin_left, margin_top, -margin_right)
         self.useable_width = round(self.fw) - margin_left - margin_right
-        self.barline_width = 3
+        self.barline_width = 2
         self.staff_height = 25
+        self.columns = 4
+        self.rows = 8
 
     def _font_stack_push(self, font_tuple):
         """ Sets current font to font_tuple.
@@ -81,24 +84,24 @@ class LeadSheet(FPDF):
         self._font_stack_pop()
         self.ln(30)
 
-    def calculate_width_for_staff(self, staff_string):
+    def calculate_width_for_staff(self, num_bars):
         """ Calculates the maximum width for a staff. """
-        num_bars = len(staff_string.split())
         num_barlines = num_bars + 1;
         return (self.useable_width - num_barlines * self.barline_width)
 
-    def print_staff(self, staff_string):
+    def print_passage(self, passage):
         """ Prints a whole staff to pdf.
 
         A chord string will be formatted and printed to the pdf.
         staff_string example: 'E C D E' for 4 bars of those chords.
         """
-        staff_width = self.calculate_width_for_staff(staff_string)
+        staff_width = self.calculate_width_for_staff(self.columns)
 
-        for bar in self.generate_staff(staff_string, staff_width):
+        for bar in passage.bars:
             self.print_barline()
-            for (chord_string, width) in bar:
-                    self._debug_cell(width, chord_string, 'L')
+            bar_width = staff_width/len(passage.bars)
+            for chord in bar.chords:
+                self._debug_cell(bar_width/len(bar.chords), chord.chord_symbol, 'L')
 
         self.print_barline(True)
 
@@ -129,50 +132,16 @@ class LeadSheet(FPDF):
 
         return result
 
-    def generate_bar(self, bar_string, cell_width):
-        """ Generates a single bar, which can contain more than one chord.
-
-        Multiple chords per bar is supported using '_'.
-        Empty bars are supported with asterisk (*).
-        Returns a list of tuples of ('<chord_string>', sub_cell_width)
-        """
-        result = []
-        chord_strings_in_bar = bar_string.split('_')
-        sub_cell_width = cell_width / len(chord_strings_in_bar)
-
-        for chord_string in chord_strings_in_bar:
-            parsed_chord = _parse_chord(chord_string) # parses chord
-            result.append((parsed_chord, sub_cell_width))
-
-        return result
 
 
 # Non-memeber functions
-def _parse_chord(chord_word):
-    """ Used to parse a single word containing a 'chord' - if necessary.
-
-    As of 2019-08-03 only supports major (A -> A) and minor (Am, a -> Am)
-    This is only supposed to be used internally, therefore no .strip()s are made.
-    """
-    # Todo implement parser-like thingy for more complicated things.
-    if chord_word != '' and chord_word[0].islower():
-        res = chord_word[0].upper()
-        res += 'm'
-        return res
-    elif (chord_word == '*'):
-        return ''
-    else:
-        return chord_word
 
 
 # tmp driver.
 if __name__ == "__main__":
     ls = LeadSheet('Macken', 'Galenskaparna')
     ls.add_page()
-    ls.print_staff('a F C G')
-    ls.print_staff('a F C G')
-    ls.print_staff('a F C G')
-    ls.print_staff('a F C G')
-    ls.print_staff('a F C G')
+    ls.print_passage(Passage('a F C G'))
+    ls.print_passage(Repeat('(a F C G)'))
     ls.add_page()
     ls.output('test.pdf', 'F')
