@@ -3,7 +3,7 @@ from fpdf import FPDF
 class LeadSheet(FPDF):
 
     # Member functions
-    def __init__( self, title, artist, 
+    def __init__( self, title, artist,
                     margin_left=10, margin_top=10, margin_right=10,
                     barline_width=2 ):
         """ Sets initial values, making generation more managable. """
@@ -19,15 +19,16 @@ class LeadSheet(FPDF):
         self._font_stack_push(self.chord_font)
 
         # Size and dimensions
-        self.set_margins(margin_left, margin_top, -margin_right) 
+        self.mar
+        self.set_margins(margin_left, margin_top, -margin_right)
         self.useable_width = round(self.fw) - margin_left - margin_right
         self.barline_width = 2
         self.staff_height = 30
 
     def _font_stack_push(self, font_tuple):
         """ Sets current font to font_tuple.
-        
-        Pushes a font tuple (family, style, size) to the font_stack and sets it as 
+
+        Pushes a font tuple (family, style, size) to the font_stack and sets it as
         the current font. Make sure to _font_stack_pop() when done.
         """
         self.font_stack.append(font_tuple)
@@ -35,16 +36,14 @@ class LeadSheet(FPDF):
 
     def _font_stack_pop(self):
         """ Restores the current font to to the previous used one.
-        
-        Pops a font tuple (family, style, size) from the font_stack and sets the  
-        previous font as the  current font. 
+
+        Pops a font tuple (family, style, size) from the font_stack and sets the
+        previous font as the  current font.
         """
         if len(self.font_stack) > 0:
             self.font_stack.pop()
             last_font = self.font_stack[len(self.font_stack)-1]
             self.set_font(last_font[0], last_font[1], last_font[2])
-        else:
-            print 'OI!'
 
     # Overrides
     def header(self):
@@ -72,15 +71,15 @@ class LeadSheet(FPDF):
         self._font_stack_pop()
         self.ln(30)
 
-    def calculate_width_for_staff(self, chords_string):
-        """ Calculates the maximum width for each cell in a row given the string """ 
-        num_chords = len(chords_string.split())
-        num_barlines = num_chords + 1;
+    def calculate_width_for_staff(self, staff_string):
+        """ Calculates the maximum width for a staff. """
+        num_bars = len(staff_string.split())
+        num_barlines = num_bars + 1;
         return (self.useable_width - num_barlines * self.barline_width)
 
     def print_staff(self, staff_string):
         """ Prints a whole staff to pdf.
-        
+
         A chord string will be formatted and printed to the pdf.
         staff_string example: 'E C D E' for 4 bars of those chords.
         """
@@ -137,10 +136,10 @@ class LeadSheet(FPDF):
 
 
 # Non-memeber functions
-def _parse_chord(chord_word): 
-    """ Used to parse a single word containing a 'chord' - if necessary. 
-    
-    As of 2019-08-03 only supports major (A -> A) and minor (Am, a -> Am) 
+def _parse_chord(chord_word):
+    """ Used to parse a single word containing a 'chord' - if necessary.
+
+    As of 2019-08-03 only supports major (A -> A) and minor (Am, a -> Am)
     This is only supposed to be used internally, therefore no .strip()s are made.
     """
     # Todo implement parser-like thingy for more complicated things.

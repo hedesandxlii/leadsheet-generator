@@ -4,7 +4,15 @@ from leadsheet import LeadSheet, _parse_chord
 @pytest.fixture
 def leadsheet():
     """ Setup leadsheet fixture. """
-    return LeadSheet()
+    return LeadSheet("Test fixture", "Artist")
+
+def test_pdf_should_always_be_210mm_in_width(leadsheet):
+    assert round(leadsheet.fw) == 210
+
+def test_default_pdf_should_always_have_10mm_margins(leadsheet):
+    assert leadsheet.l_margin == 10
+    assert leadsheet.t_margin == 10
+    assert leadsheet.r_margin == -10
 
 
 def test_calculate_width_for_staff_defaults_should_be_correct(leadsheet):
@@ -13,7 +21,7 @@ def test_calculate_width_for_staff_defaults_should_be_correct(leadsheet):
     assert width == (210   - 20     - 2*5)
 
 def test_calculate_width_for_staff_large_margins_should_be_correct():
-    ls = LeadSheet(50, 50, 50)
+    ls = LeadSheet("", "", 50, 0, 50)
     width = ls.calculate_width_for_staff('a b c d')
     #               total   margins barlines
     assert width == (210   - 100     - 2*5)
