@@ -96,52 +96,49 @@ class LeadSheet(FPDF):
         staff_string example: 'E C D E' for 4 bars of those chords.
         """
         staff_width = self.calculate_width_for_staff(self.columns)
-
-        for bar in passage.bars:
-            self.print_barline()
-            bar_width = staff_width/len(passage.bars)
-            for chord in bar.chords:
-                self._debug_cell(bar_width/len(bar.chords), chord.chord_symbol, 'L')
-
-        self.print_barline(True)
-
-
-    def print_barline(self, line_break=False):
-        """ Prints a barline with width 'self.barline_width' """
-        self._font_stack_push(self.notation_font)
-        self._debug_cell(self.barline_width, '|')
-        if line_break:
-            self.ln(self.staff_height)
-        self._font_stack_pop()
+        print_queue = self.get_print_queue(passage,
+                self.calculate_width_for_staff(len(passage.bars)))
+        for string, width in print_queue:
+            if string == 'newline':
+                self.ln(self.staff_height)
+            else:
+                self._debug_cell(width, string, 'L')
 
 
-#== Model ==========================================================================
-
-    def generate_staff(self, staff_string, staff_width):
-        """ Generates a staff containing a defined number of bars.
-
-        Bars are told aside from eachother by a space (' ')
-        Returns a list of list of tuples ready for printing
-        Tuple format: ('<chord_string>', sub_cell_width)
+    def get_print_queue(self, passage, useable_width):
+        """ Return a list of tuples [('string', width), ...]
         """
         result = []
-        bar_strings = staff_string.strip().split()
+        outer_barlines = passage.get_outer_barlines()
+        num_bars = len(passage.bars)
+        num_rows = int(num_bars)/int(self.columns)
+        last_line = self.columns % num_bars
+        # Every row of bars
+        for i in range(self.columns):
+            for j in range(num_rows):
+                if i+j == 0:
+                    result.append( (outer_barlines[0], self.barline_width) )
+                elif i+j == num_bars:
+                    result.append( (outer_barlines[1], self.barline_width) )
+                else:
+                    result.append( ('|', self.barline_width) )
+                    break
 
-        for bar_string in bar_strings:
-            result.append( self.generate_bar(bar_string, staff_width/len(bar_strings)))
 
         return result
 
-
-
-# Non-memeber functions
-
+    def print_barline(self, line, line_break=False):
+        """ Prints a barline with width 'self.barline_width' """
+        self._font_stack_push(self.notation_font)
+        self._debug_cell(self.barline_width, line)
+        if line_break:
+            self.ln(self.staff_height)
+        self._font_stack_pop()
 
 # tmp driver.
 if __name__ == "__main__":
     ls = LeadSheet('Macken', 'Galenskaparna')
     ls.add_page()
-    ls.print_passage(Passage('a F C G'))
-    ls.print_passage(Repeat('(a F C G)'))
+    ls.print_passage(Repeat('(a F C G a F C G)'))
     ls.add_page()
     ls.output('test.pdf', 'F')
