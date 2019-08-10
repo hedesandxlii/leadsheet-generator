@@ -1,6 +1,6 @@
 import pytest
 from leadsheet import LeadSheet
-from model import Bar, Chord, Passage, Repeat
+from model import *
 
 @pytest.fixture
 def leadsheet():

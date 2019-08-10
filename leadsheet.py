@@ -1,5 +1,5 @@
 from fpdf import FPDF
-from model import Passage, Repeat
+from model import *
 
 class LeadSheet(FPDF):
 
