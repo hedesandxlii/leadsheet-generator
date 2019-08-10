@@ -26,6 +26,7 @@ class LeadSheet(FPDF):
         self.set_margins(margin_left, margin_top, -margin_right)
         self.useable_width = round(self.fw) - margin_left - margin_right
         self.barline_width = 2
+        self.repeat_barline_width = 6
         self.staff_height = 25
         self.columns = 4
         self.rows = 8
@@ -61,10 +62,6 @@ class LeadSheet(FPDF):
             self._font_stack_pop()
 
     # Helpers
-    def _debug_cell(self, w = 0, txt = '', align = 'L'):
-        self.cell(w=w, h=self.staff_height, txt=txt, border=1, align=align)
-
-
     def _cell(self, w = 0, txt = '', align = 'L'):
         self.cell(w=w, h=self.staff_height, txt=txt, align=align)
 
@@ -90,55 +87,55 @@ class LeadSheet(FPDF):
         return (self.useable_width - num_barlines * self.barline_width)
 
     def print_passage(self, passage):
-        """ Prints a whole staff to pdf.
+        passage_useable_widht = self.useable_width
 
-        A chord string will be formatted and printed to the pdf.
-        staff_string example: 'E C D E' for 4 bars of those chords.
-        """
-        staff_width = self.calculate_width_for_staff(self.columns)
-        print_queue = self.get_print_queue(passage,
-                self.calculate_width_for_staff(len(passage.bars)))
-        for string, width in print_queue:
-            if string == 'newline':
+        for index, bar in enumerate(passage.bars):
+            if (index + 1) % 4 == 0 or index == len(passage.bars)-1:
+                self.print_bar(bar, passage_useable_widht/self.columns, True)
                 self.ln(self.staff_height)
             else:
-                self._debug_cell(width, string, 'L')
+                self.print_bar(bar, passage_useable_widht/self.columns)
+
+    def print_bar(self, bar, bar_useable_width, print_trailing_barline=False):
+        width_for_barlines = [0, 0]
+        width_for_barlines[0] = \
+                self.repeat_barline_width if Bar.BarProperties.REPEAET_BEGIN in bar.properties else self.barline_width
+        if print_trailing_barline:
+            width_for_barlines[1] = \
+                    self.repeat_barline_width if Bar.BarProperties.REPEAET_END in bar.properties else self.barline_width
+
+        self.print_barline(bar, width_for_barlines[0])
+        for chord in bar.chords:
+            self.print_chord( chord, (bar_useable_width-sum(width_for_barlines))/len(bar.chords) )
+        if print_trailing_barline:
+            self.print_barline(bar, width_for_barlines[1], False)
+
+    def print_chord(self, chord, chord_useable_width):
+        self._cell(w=chord_useable_width, txt=chord.chord_symbol)
 
 
-    def get_print_queue(self, passage, useable_width):
-        """ Return a list of tuples [('string', width), ...]
-        """
-        result = []
-        outer_barlines = passage.get_outer_barlines()
-        num_bars = len(passage.bars)
-        num_rows = int(num_bars)/int(self.columns)
-        last_line = self.columns % num_bars
-        # Every row of bars
-        for i in range(self.columns):
-            for j in range(num_rows):
-                if i+j == 0:
-                    result.append( (outer_barlines[0], self.barline_width) )
-                elif i+j == num_bars:
-                    result.append( (outer_barlines[1], self.barline_width) )
-                else:
-                    result.append( ('|', self.barline_width) )
-                    break
+    def print_barline(self, bar, width, leading=True):
+        """ Prints a barline and returns its width."""
+        barlines = ['|', '|']
+        if Bar.BarProperties.REPEAET_BEGIN in bar.properties:
+            barlines[0] = '('
+        if Bar.BarProperties.REPEAET_END in bar.properties:
+            barlines[1] = ')'
 
-
-        return result
-
-    def print_barline(self, line, line_break=False):
-        """ Prints a barline with width 'self.barline_width' """
         self._font_stack_push(self.notation_font)
-        self._debug_cell(self.barline_width, line)
-        if line_break:
-            self.ln(self.staff_height)
+        if leading:
+            self._cell(w=width, txt=barlines[0])
+        else:
+            self._cell(w=width, txt=barlines[1])
         self._font_stack_pop()
+
 
 # tmp driver.
 if __name__ == "__main__":
     ls = LeadSheet('Macken', 'Galenskaparna')
     ls.add_page()
-    ls.print_passage(Repeat('(a F C G a F C G)'))
+    ls.print_passage(Repeat('(E * A_B E)'))
+    ls.print_passage(Passage('A E B E'))
+    ls.print_passage(Passage('A E A E A_E/G# F#m E B'))
     ls.add_page()
     ls.output('test.pdf', 'F')

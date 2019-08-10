@@ -11,6 +11,3 @@ class Passage(object):
             result.append(Bar(bar_string))
 
         return result
-
-    def get_outer_barlines(self):
-        return ('|', '|')
