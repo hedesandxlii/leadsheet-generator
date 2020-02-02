@@ -1,4 +1,4 @@
-from chord import Chord
+from .chord import Chord
 from enum import Enum, unique
 
 class Bar:

@@ -1,5 +1,5 @@
-from passage import Passage
-from bar import Bar
+from .passage import Passage
+from .bar import Bar
 
 class Repeat(Passage):
     def __init__(self, repeat_string):
